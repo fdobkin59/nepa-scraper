@@ -22,7 +22,7 @@ lengthen <- function(x, n) {
 #Scrape Setup
 base_url <- "https://scholar.google.com/scholar?"
 query <- list(
-  q = "National Environmental Policy Act",
+  q = '"National Environmental Policy Act"',
   hl = "en",    # Only return English results
   as_sdt = "3"  # Restrict to federal court cases only
 )
