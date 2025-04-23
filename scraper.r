@@ -167,6 +167,3 @@ results_all <- results_all %>%
 # -------------------------------------------
 
 print(head(results_all, 10))
-
-# Optional: write to CSV
-# write_csv(results_all, "C:/Users/fdobkin59/Desktop/NEPA/Data/Misc. Files/nepa_cases_scraped_federal_classified.csv")
