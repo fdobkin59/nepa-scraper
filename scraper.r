@@ -99,7 +99,8 @@ results_all <- results_all %>%
     Court_Citation = gsub("- Dist. Court", "", Court_Citation)
   ) %>%
   select(-Citation) %>%
-  rename(Citation = Citation_Clean)
+  rename(Citation = Citation_Clean) %>%
+  filter(year >= 1970)
  
 #Check Output
 print(head(results_all, 10))
