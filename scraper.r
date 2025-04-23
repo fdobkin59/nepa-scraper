@@ -1,3 +1,21 @@
+# -------------------------------------------
+# Load Packages
+# -------------------------------------------
+
+required_packages <- c("rvest", "dplyr", "stringr", "progress", "readr", "httr", "curl")
+installed_packages <- rownames(installed.packages())
+
+for (pkg in required_packages) {
+  if (!pkg %in% installed_packages) {
+    install.packages(pkg)
+  }
+}
+lapply(required_packages, library, character.only = TRUE)
+
+# -------------------------------------------
+# Helper Function to Pad Vectors
+# -------------------------------------------
+
 lengthen <- function(x, n) {
   length(x) <- n
   return(x)
@@ -91,10 +109,7 @@ repeat {
   closeAllConnections()
 }
 
-# -------------------------------------------
-# Clean Citation and Extract Info
-# -------------------------------------------
-
+#Extract Information from Citation Variable
 results_all <- results_all %>%
   mutate(
     Citation_Clean = str_replace(Citation, " - Google Scholar", ""),
@@ -108,10 +123,9 @@ results_all <- results_all %>%
     Court_Citation = gsub("- Court of Appeals", "", Court_Citation),
     Court_Citation = gsub("- Dist. Court", "", Court_Citation)
   ) %>%
-  select(-Citation)
-
-# -------------------------------------------
-# Output Sample
-# -------------------------------------------
-
+  select(-Citation) %>%
+  rename(Citation = Citation_Clean)
+ 
+#Check Output
 print(head(results_all, 10))
+cat("Script ran successfully!")
