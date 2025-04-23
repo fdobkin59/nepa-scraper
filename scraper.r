@@ -105,7 +105,8 @@ results_all <- results_all %>%
     Court_Name = str_replace(Court_Name, ",$", ""),
     Court_Name = ifelse(str_detect(Court_Name, "Supreme Court"), "Supreme Court", Court_Name),
     Court_Citation = str_extract(Citation_Clean, "^[^,]+"),
-    Court_Citation = gsub("- Court of Appeals", "", Court_Citation)
+    Court_Citation = gsub("- Court of Appeals", "", Court_Citation),
+    Court_Citation = gsub("- Dist. Court", "", Court_Citation)
   ) %>%
   select(-Citation)
 
