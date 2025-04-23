@@ -160,7 +160,7 @@ results_all$Court_Citation <- gsub("- Court of Appeals", "", results_all$Court_C
 # -------------------------------------------
 
 results_all <- results_all %>%
-  select(-Citation)
+  select(-Citation, Snippet)
 
 # -------------------------------------------
 # Output and Inspection
