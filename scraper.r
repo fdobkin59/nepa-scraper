@@ -1,6 +1,6 @@
 #Author: Finn Dobkin
 #Date: 4/23/2025
-
+#Next Steps: Extract Judge Names; Docket Number; Amicus Supporters; Authoring Judge; Was case dismissed; Outcome; Remedy granted;
 
 #Load Packages
 required_packages <- c("rvest", "dplyr", "stringr", "progress", "readr", "httr", "curl")
