@@ -1,22 +1,3 @@
-#Author: Finn Dobkin
-#Date: 4/23/2025
-
-
-#Install and load packages
-required_packages <- c("rvest", "dplyr", "stringr", "progress", "readr", "httr", "curl")
-installed_packages <- rownames(installed.packages())
-
-for (pkg in required_packages) {
-  if (!pkg %in% installed_packages) {
-    install.packages(pkg)
-  }
-}
-lapply(required_packages, library, character.only = TRUE)
-
-# -------------------------------------------
-# Helper Function to Pad Vectors
-# -------------------------------------------
-
 lengthen <- function(x, n) {
   length(x) <- n
   return(x)
@@ -34,21 +15,15 @@ query <- list(
   as_sdt = "3"  # Restrict to federal court cases only
 )
 
-num_pages <- 3  # Modify as needed
-
 results_all <- tibble()
-
-pb <- progress::progress_bar$new(
-  total = num_pages,
-  format = "Scraping [:bar] :current/:total (:percent) ETA: :eta",
-  clear = FALSE, width = 60
-)
+i <- 0
 
 # -------------------------------------------
-# Scraping Loop
+# Scraping Loop (auto-paging, 2000-result cap)
 # -------------------------------------------
 
-for (i in 0:(num_pages - 1)) {
+repeat {
+  if (i >= 200) break  # Stop after 2000 results max (200 pages x 10 per page)
   
   start_val <- i * 10
   
@@ -71,11 +46,13 @@ for (i in 0:(num_pages - 1)) {
     return(NULL)
   })
   
-  if (is.null(page)) next
+  if (is.null(page)) break
   
   titles <- page %>%
     html_nodes(".gs_rt") %>%
     html_text(trim = TRUE)
+  
+  if (length(titles) == 0) break
   
   link_nodes <- page %>% html_nodes(".gs_rt")
   links <- link_nodes %>%
@@ -90,7 +67,6 @@ for (i in 0:(num_pages - 1)) {
     html_nodes(".gs_a") %>%
     html_text(trim = TRUE)
   
-  # Ensure equal lengths
   max_len <- length(titles)
   links <- lengthen(links, max_len)
   snippets <- lengthen(snippets, max_len)
@@ -105,65 +81,36 @@ for (i in 0:(num_pages - 1)) {
   
   results_all <- bind_rows(results_all, results_page)
   
-  pb$tick()
+  # Stop if no "Next" button
+  next_button <- page %>% html_nodes(".gs_ico_nav_next")
+  if (length(next_button) == 0) break
   
+  i <- i + 1
+  Sys.sleep(runif(1, 15, 30))  # polite delay
   gc()
   closeAllConnections()
-  
-  Sys.sleep(runif(1, 15, 30))
 }
 
 # -------------------------------------------
-# Clean Citation and Extract Court Name and Year
-# -------------------------------------------
-
-# Step 1: Remove "Google Scholar" from the Citation
-results_all <- results_all %>%
-  mutate(Citation_Clean = str_replace(Citation, " - Google Scholar", ""))
-
-# Step 2: Extract the year from Citation_Clean (after "Google Scholar" is removed)
-results_all <- results_all %>%
-  mutate(Year = str_extract(Citation_Clean, "\\d{4}$"))
-
-# Step 3: Remove the year (in parentheses) from Citation_Clean
-results_all <- results_all %>%
-  mutate(Citation_Clean = str_replace(Citation_Clean, "\\(\\d{4}\\)", ""))
-
-# Step 4: Extract the court name (everything after the citation until the year)
-results_all <- results_all %>%
-  mutate(Court_Name = str_extract(Citation_Clean, "(?<=, ).*$"))
-
-# Step 5: Remove the year from Court_Name
-results_all <- results_all %>%
-  mutate(Court_Name = str_replace(Court_Name, "\\s\\d{4}$", ""))
-
-# Step 6: Remove unnecessary comma after Circuit (if present)
-results_all <- results_all %>%
-  mutate(Court_Name = str_replace(Court_Name, ",$", ""))
-
-# Step 7: Remove unnecessary text for Supreme Court
-results_all <- results_all %>%
-  mutate(Court_Name = ifelse(str_detect(Court_Name, "Supreme Court"), "Supreme Court", Court_Name))
-
-# -------------------------------------------
-# Remove " - Court of Appeals" from the end of Court_Citation
+# Clean Citation and Extract Info
 # -------------------------------------------
 
 results_all <- results_all %>%
-  mutate(Court_Citation = str_extract(Citation_Clean, "^[^,]+"))
-
-# Step 8: If Court_Citation ends with " - Court of Appeals", drop that text
-results_all$Court_Citation <- gsub("- Court of Appeals", "", results_all$Court_Citation)
+  mutate(
+    Citation_Clean = str_replace(Citation, " - Google Scholar", ""),
+    Year = str_extract(Citation_Clean, "\\d{4}$"),  # <--- Get last 4-digit year
+    Citation_Clean = str_replace(Citation_Clean, "\\(\\d{4}\\)", ""),
+    Court_Name = str_extract(Citation_Clean, "(?<=, ).*$"),
+    Court_Name = str_replace(Court_Name, "\\s\\d{4}$", ""),
+    Court_Name = str_replace(Court_Name, ",$", ""),
+    Court_Name = ifelse(str_detect(Court_Name, "Supreme Court"), "Supreme Court", Court_Name),
+    Court_Citation = str_extract(Citation_Clean, "^[^,]+"),
+    Court_Citation = gsub("- Court of Appeals", "", Court_Citation)
+  ) %>%
+  select(-Citation)
 
 # -------------------------------------------
-# Drop Citation (but keep Citation_Clean)
-# -------------------------------------------
-
-results_all <- results_all %>%
-  select(-Citation, Snippet)
-
-# -------------------------------------------
-# Output and Inspection
+# Output Sample
 # -------------------------------------------
 
 print(head(results_all, 10))
