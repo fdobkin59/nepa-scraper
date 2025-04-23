@@ -100,7 +100,7 @@ results_all <- results_all %>%
   ) %>%
   select(-Citation) %>%
   rename(Citation = Citation_Clean) %>%
-  filter(year >= 1970)
+  filter(as.numeric(year) >= 1970)
  
 #Check Output
 print(head(results_all, 10))
